@@ -23,10 +23,10 @@
       var speed = 2
 
 
-      var ballX = 600
+      var ballX = 1180
       var ballY = 300
-      var ballXS = -2
-      var ballYS = 0
+      var ballXS = 0
+      var ballYS = 2
       var duzina = 0
 
       var tempX = ballX
@@ -146,7 +146,7 @@
       }
 
       function wallCollisionHH(X, Y) {
-          if (X - 5 <= 15 && (Y - 5 <= 150 || Y - 5 >= 450)) {
+          if (X - 5 <= 10 && (Y - 5 <= 150 || Y - 5 >= 450)) {
               ballXS = -ballXS
               return "hor"
           }
