@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Pong Projekat</title>
+    <canvas id="Pong" width="1200" height="600"></canvas>
+    <script type="text/javascript">
+      var canvas = document.getElementById('Pong');
+      if (canvas.getContext) {
+          var context = canvas.getContext('2d');
+      }
+
+      var paddleX = 0
+      var paddleY = 250
+      var centerX = 5
+      var centerY = 300
+
+      var paddle2X = 1190
+      var paddle2Y = 250
+      var center2X = 1195
+      var center2Y = 300
+
+      var speed = 2
+
+
+      var ballX = 600
+      var ballY = 300
+      var ballXS = 2
+      var ballYS = 0
+      var duzina = 0
+
+      var tempX = ballX
+      var tempY = ballY
+
+      var hit = 0
+
+      var t1 = [600, 150]
+      var t2 = [800, 150 + 400 / 2 * Math.sqrt(2)]
+      var t3 = [400, 150 + 400 / 2 * Math.sqrt(2)]
+      var distX = t1[0] - t3[0];
+      var distY = t1[1] - t3[1];
+      var distX2 = t1[0] - t2[0];
+      var distY2 = t1[1] - t2[1];
+      var distX3 = t3[0] - t2[0];
+      var distY3 = t3[1] - t2[1];
+      var len = Math.sqrt((distX * distX) + (distY * distY));
+
+      var a1 = [10, 120]
+      var a2 = [600, 10]
+      var a3 = [1190, 120]
+      var a4 = [10, 480]
+      var a5 = [600, 590]
+      var a6 = [1190, 480]
+      var distXa = a1[0] - a2[0];
+      var distYa = a1[1] - a2[1];
+      var distX2a = a2[0] - a3[0];
+      var distY2a = a2[1] - a3[1];
+      var distX3a = a4[0] - a5[0];
+      var distY3a = a4[1] - a5[1];
+      var distX4a = a5[0] - a6[0];
+      var distY4a = a5[1] - a6[1];
+      var len2 = Math.sqrt((distXa * distXa) + (distYa * distYa));
+
+      var prev = 0
+      var cur = 0
+      var player1S = 0
+      var player2S = 0
+
+      var keyState = {};
+      window.addEventListener('keydown', function(e) {
+          keyState[e.keyCode || e.which] = true;
+      }, true);
+      window.addEventListener('keyup', function(e) {
+          keyState[e.keyCode || e.which] = false;
+      }, true);
+
+      function drawPaddles() {
+          context.beginPath();
+          context.fillStyle = 'white';
+          context.fillRect(paddleX, paddleY, 10, 100);
+          context.closePath();
+
+          context.beginPath();
+          context.fillStyle = 'white';
+          context.fillRect(paddle2X, paddle2Y, 10, 100);
+          context.closePath();
+      }
+
+      function drawBall() {
+          context.beginPath();
+          context.fillStyle = 'white';
+          context.arc(ballX, ballY, 5, 0, 2 * Math.PI);
+          context.fill();
+
+          context.closePath();
+      }
+      function drawBallOb() {
+          context.beginPath();
+          context.fillStyle = 'white';
+          context.arc(600, 300, 50, 0, 2 * Math.PI);
+          context.fill();
+
+          context.closePath();
+      }
+
+      function paddleCollision(X, Y) {
+          if (X - 5 < centerX + 5 && (Y - 5 < centerY + 50 && Y + 5 > centerY - 50)) {
+
+              ballXS = -ballXS
+
+              ballYS = (Y - centerY) * 0.1
+              speed += 1
+              return 1;
+          }
+
+          if (X + 5 > center2X - 5 && (Y - 5 < center2Y + 50 && Y + 5 > center2Y - 50)) {
+
+              ballXS = -ballXS
+              ballYS = (Y - center2Y) * 0.1
+              speed += 1
+              return 2;
+          }
+          return 0;
+      }
+
+      function speedAdjust() {
+          var correction = Math.sqrt(ballXS * ballXS + ballYS * ballYS)
+          ballXS = ballXS * speed / correction
+          ballYS = ballYS * speed / correction
+      }
+
+      function wallCollisionV(X, Y) {
+          if (Y - 5 <= 15 && Y + 5 >= 15) {
+              ballYS = -ballYS
+              return "vert"
+          }
+          if (Y + 5 >= 585 && Y - 5 <= 585) {
+              ballYS = -ballYS
+              return "vert"
+          }
+          return false
+      }
+
+      function wallCollisionH(X, Y) {
+          if (X - 5 <= 15 && (Y - 5 <= 50 || Y - 5 >= 550)) {
+              ballXS = -ballXS
+              return "hor"
+          }
+          if (X + 5 >= 1190 && (Y - 5 <= 50 || Y - 5 >= 550)) {
+              ballXS = -ballXS
+              return "hor"
+          }
+          return false
+      }
+
+      function wallCollisionHH(X, Y) {
+          if (X - 5 <= 10 && (Y - 5 <= 150 || Y - 5 >= 450)) {
+              ballXS = -ballXS
+              return "hor"
+          }
+          if (X + 5 >= 1190 && (Y - 5 <= 150 || Y - 5 >= 450)) {
+              ballXS = -ballXS
+              return "hor"
+          }
+          return false
+      }
+
+      function wallCollisionH1(X, Y) {
+          var dot = (((X - a1[0]) * (a2[0] - a1[0])) + ((Y - a1[1]) * (a2[1] - a1[1]))) / Math.pow(len2, 2);
+          var closestX = a1[0] + (dot * (a2[0] - a1[0]));
+          var closestY = a1[1] + (dot * (a2[1] - a1[1]));
+          var distXt = X - closestX;
+          var distYt = Y - closestY;
+          var lent = Math.sqrt((distXt * distXt) + (distYt * distYt));
+
+          //alert(Math.abs(lent)+" "+ (X+5)+" "+(X-5) +" "+(Y-5)+" "+(Y+5))
+
+          if (Math.abs(lent) <= 5 && X + 5 >= 10 && X - 5 <= 600 && Y + 5 >= 10 && Y - 5 <= 150) {
+
+
+              var normx = ballXS / speed
+              var normy = ballYS / speed
+
+              var dd = (normx * distXa / len2 + normy * distYa / len2) * 2
+              var refX = distXa / len2 * dd - normx
+              var refY = distYa / len2 * dd - normy
+              var lenr = Math.sqrt(refX * refX + refY * refY);
+              ballXS = (refX / lenr) * speed
+              ballYS = (refY / lenr) * speed
+
+              return "1"
+          }
+      }
+
+      function wallCollisionH2(X, Y) {
+          var dot = (((X - a2[0]) * (a3[0] - a2[0])) + ((Y - a2[1]) * (a3[1] - a2[1]))) / Math.pow(len2, 2);
+          var closestX = a2[0] + (dot * (a3[0] - a2[0]));
+          var closestY = a2[1] + (dot * (a3[1] - a2[1]));
+          var distXt = X - closestX;
+          var distYt = Y - closestY;
+          var lent = Math.sqrt((distXt * distXt) + (distYt * distYt));
+
+          //alert(Math.abs(lent)+" "+ (X+5)+" "+(X-5) +" "+(Y-5)+" "+(Y+5))
+
+          if (Math.abs(lent) <= 5 && X + 5 >= 600 && X - 5 <= 1190 && Y + 5 >= 10 && Y - 5 <= 150) {
+
+
+              var normx = ballXS / speed
+              var normy = ballYS / speed
+
+              var dd = (normx * distX2a / len2 + normy * distY2a / len2) * 2
+              var refX = distX2a / len2 * dd - normx
+              var refY = distY2a / len2 * dd - normy
+              var lenr = Math.sqrt(refX * refX + refY * refY);
+              ballXS = (refX / lenr) * speed
+              ballYS = (refY / lenr) * speed
+
+              return "2"
+          }
+      }
+
+      function wallCollisionH3(X, Y) {
+          var dot = (((X - a4[0]) * (a5[0] - a4[0])) + ((Y - a4[1]) * (a5[1] - a4[1]))) / Math.pow(len2, 2);
+          var closestX = a4[0] + (dot * (a5[0] - a4[0]));
+          var closestY = a4[1] + (dot * (a5[1] - a4[1]));
+          var distXt = X - closestX;
+          var distYt = Y - closestY;
+          var lent = Math.sqrt((distXt * distXt) + (distYt * distYt));
+
+          //alert(Math.abs(lent)+" "+ (X+5)+" "+(X-5) +" "+(Y-5)+" "+(Y+5))
+
+          if (Math.abs(lent) <= 5 && X + 5 >= 10 && X - 5 <= 600 && Y + 5 >= 450 && Y - 5 <= 590) {
+
+
+              var normx = ballXS / speed
+              var normy = ballYS / speed
+
+              var dd = (normx * distX3a / len2 + normy * distY3a / len2) * 2
+              var refX = distX3a / len2 * dd - normx
+              var refY = distY3a / len2 * dd - normy
+              var lenr = Math.sqrt(refX * refX + refY * refY);
+              ballXS = (refX / lenr) * speed
+              ballYS = (refY / lenr) * speed
+
+              return "3"
+          }
+      }
+
+      function wallCollisionH4(X, Y) {
+          var dot = (((X - a5[0]) * (a6[0] - a5[0])) + ((Y - a5[1]) * (a6[1] - a5[1]))) / Math.pow(len2, 2);
+          var closestX = a5[0] + (dot * (a6[0] - a5[0]));
+          var closestY = a5[1] + (dot * (a6[1] - a5[1]));
+          var distXt = X - closestX;
+          var distYt = Y - closestY;
+          var lent = Math.sqrt((distXt * distXt) + (distYt * distYt));
+
+          //alert(Math.abs(lent)+" "+ (X+5)+" "+(X-5) +" "+(Y-5)+" "+(Y+5))
+
+          if (Math.abs(lent) <= 5 && X + 5 >= 600 && X - 5 <= 1190 && Y + 5 >= 450 && Y - 5 <= 590) {
+
+
+              var normx = ballXS / speed
+              var normy = ballYS / speed
+
+              var dd = (normx * distX4a / len2 + normy * distY4a / len2) * 2
+              var refX = distX4a / len2 * dd - normx
+              var refY = distY4a / len2 * dd - normy
+              var lenr = Math.sqrt(refX * refX + refY * refY);
+              ballXS = (refX / lenr) * speed
+              ballYS = (refY / lenr) * speed
+
+              return "4"
+          }
+      }
+
+      function detectGoal() {
+          if (ballX + 5 < 0) {
+              player2S += 1
+              speed = 2
+              ballX = 400
+              ballY = 300
+              ballXS = -2
+              ballYS = 0
+              document.getElementById("Score").innerText = "Player1: " + player1S + "  Player2: " + player2S;
+              if (player2S >= 10) {
+                  document.getElementById("Winner").innerText = "Player 2 wins!"
+
+                  player1S = 0
+                  player2S = 0
+              }
+
+
+          }
+          if (ballX - 5 > 1200) {
+              player1S += 1
+              speed = 2
+              ballX = 800
+              ballY = 300
+              ballXS = 2
+              ballYS = 0
+              document.getElementById("Score").innerText = "Player1: " + player1S + "  Player2: " + player2S;
+              if (player1S >= 10) {
+                  document.getElementById("Winner").innerText = "Player 1 wins!"
+
+                  player1S = 0
+                  player2S = 0
+
+              }
+
+
+          }
+      }
+
+      function drawArena() {
+          if (document.querySelector('#arena-select').value == "Rectangle") {
+
+
+              context.beginPath();
+              context.strokeStyle = 'white';
+              context.lineWidth = 5;
+              context.moveTo(10, 10);
+              context.lineTo(1190, 10);
+              context.moveTo(10, 10);
+              context.lineTo(10, 50);
+              context.moveTo(1190, 10);
+              context.lineTo(1190, 50);
+
+              context.moveTo(10, 590);
+              context.lineTo(1190, 590);
+              context.moveTo(10, 590);
+              context.lineTo(10, 550);
+              context.moveTo(1190, 590);
+              context.lineTo(1190, 550);
+              context.stroke();
+
+              context.closePath();
+          } else if (document.querySelector('#arena-select').value == "Hexagon") {
+              context.beginPath();
+              context.strokeStyle = 'white';
+              context.lineWidth = 5;
+              context.moveTo(10, 150);
+              context.lineTo(10, 120);
+              context.lineTo(600, 10);
+              context.lineTo(1190, 120);
+              context.lineTo(1190, 150);
+
+              context.moveTo(10, 450);
+              context.lineTo(10, 480);
+              context.lineTo(600, 590);
+              context.lineTo(1190, 480);
+              context.lineTo(1190, 450);
+              context.stroke();
+          }
+      }
+
+      function drawRectangles() {
+          context.beginPath();
+          context.fillStyle = 'white';
+          context.fillRect(590, 60, 20, 150);
+          context.closePath();
+          context.beginPath();
+          context.fillStyle = 'white';
+          context.fillRect(590, 540 - 150, 20, 150);
+          context.closePath();
+      }
+
+      function drawTriangle() {
+          context.beginPath();
+          context.strokeStyle = 'white';
+          context.fillStyle = 'white';
+          context.lineWidth = 1;
+          context.moveTo(600, 150);
+          context.lineTo(800, 150 + 400 / 2 * Math.sqrt(2));
+          context.lineTo(400, 150 + 400 / 2 * Math.sqrt(2));
+          context.stroke();
+          context.fill();
+          context.closePath();
+      }
+
+      function rectanglesCollisions(X, Y) {
+          if (((X + 5 >= 590 && X - 5 <= 590 && ballXS > 0) ||
+                  (X - 5 <= 610 && X + 5 >= 610 && ballXS < 0)) &&
+              (Y - 5 <= 60 + 150 && Y + 5 >= 60)) {
+              ballXS = -ballXS
+              return "side"
+          }
+          if (((X + 5 >= 590 && X - 5 <= 590 && ballXS > 0) ||
+                  (X - 5 <= 610 && X + 5 >= 610 && ballXS < 0)) &&
+              (Y - 5 <= 540 && Y + 5 >= 540 - 150)) {
+              ballXS = -ballXS
+              return "side"
+          }
+      }
+
+      function rectanglesCollisiont(X, Y) {
+          if (((Y + 5 >= 60 && Y - 5 <= 60 && ballYS > 0) ||
+                  (Y - 5 <= 60 + 150 && Y + 5 >= 60 + 150 && ballYS < 0)) &&
+              X - 5 <= 610 && X + 5 >= 590) {
+
+              ballYS = -ballYS
+              return "top"
+          }
+
+          if (((Y + 5 >= 540 - 150 && Y - 5 <= 540 - 150 && ballYS > 0) ||
+                  (Y - 5 <= 540 && Y + 5 >= 540 && ballYS < 0)) &&
+              X - 5 <= 610 && X + 5 >= 590) {
+              ballYS = -ballYS
+              return "top"
+          }
+
+      }
+
+      function triangleCollisionB(X, Y) {
+
+          if (Y - 5 <= 150 + 400 / 2 * Math.sqrt(2) && Y + 5 >= 150 + 400 / 2 * Math.sqrt(2) && X + 5 >= 400 && X - 5 <= 800) {
+              ballYS = -ballYS
+              return "bottom"
+          }
+      }
+
+      function triangleCollision(X, Y) {
+          var dot = (((X - t1[0]) * (t3[0] - t1[0])) + ((Y - t1[1]) * (t3[1] - t1[1]))) / Math.pow(len, 2);
+          var closestX = t1[0] + (dot * (t3[0] - t1[0]));
+          var closestY = t1[1] + (dot * (t3[1] - t1[1]));
+          var distXt = X - closestX;
+          var distYt = Y - closestY;
+          var lent = Math.sqrt((distXt * distXt) + (distYt * distYt));
+
+          //alert(Math.abs(lent)+" "+ (X+5)+" "+(X-5) +" "+(Y-5)+" "+(Y+5))
+
+          if (Math.abs(lent) <= 5 && X + 5 >= 400 && X - 5 <= 800 && Y + 5 >= 150 && Y - 5 <= 150 + 400 / 2 * Math.sqrt(2)) {
+
+
+              var normx = ballXS / speed
+              var normy = ballYS / speed
+
+              var dd = (normx * distX / len + normy * distY / len) * 2
+              var refX = distX / len * dd - normx
+              var refY = distY / len * dd - normy
+              var lenr = Math.sqrt(refX * refX + refY * refY);
+              ballXS = (refX / lenr) * speed
+              ballYS = (refY / lenr) * speed
+
+              return "left"
+          }
+      }
+
+      function triangleCollisionR(X, Y) {
+          var dot = (((X - t1[0]) * (t2[0] - t1[0])) + ((Y - t1[1]) * (t2[1] - t1[1]))) / Math.pow(len, 2);
+          var closestX = t1[0] + (dot * (t2[0] - t1[0]));
+          var closestY = t1[1] + (dot * (t2[1] - t1[1]));
+          var distXt = X - closestX;
+          var distYt = Y - closestY;
+          var lent = Math.sqrt((distXt * distXt) + (distYt * distYt));
+
+          if (Math.abs(lent) < 5 && X - 5 > 400 && X + 5 < 800 && Y + 5 >= 150 && Y - 5 <= 150 + 400 / 2 * Math.sqrt(2)) {
+              //473,323
+
+              var normx = ballXS / speed
+              var normy = ballYS / speed
+
+              var dd = (normx * distX2 / len + normy * distY / len) * 2
+              var refX = distX2 / len * dd - normx
+              var refY = distY2 / len * dd - normy
+              var lenr = Math.sqrt(refX * refX + refY * refY);
+              ballXS = (refX / lenr) * speed
+              ballYS = (refY / lenr) * speed
+
+              return "right"
+          }
+      }
+      function corner(X,Y,point){
+        var vectorX = X - point[0]
+        var vectorY = Y - point[1]
+       /* context.beginPath();
+          context.strokeStyle = 'white';
+          context.fillStyle = 'white';
+          context.lineWidth = 5;
+          context.moveTo(X,Y);
+          context.lineTo(X-ballXS*20, Y-ballYS*20);
+          context.stroke();
+          context.fill();
+          context.closePath();
+          */
+        var lent = Math.sqrt((vectorX * vectorX) + (vectorY * vectorY));
+        if (Math.abs(lent) < 5) {
+    var normx = ballXS / speed
+    var normy = ballYS / speed
+            if(lent==0){
+                lent=1
+            }
+    var dd = (normx * vectorX / lent+ normy * vectorY / lent) * 2
+    var refX = -(vectorX / lent * dd - normx)
+    var refY = -(vectorY / lent * dd - normy)
+    var lenr = Math.sqrt(refX * refX + refY * refY);
+    ballXS = (refX / lenr) * speed
+    ballYS = (refY / lenr) * speed
+
+    return "true"
+}
+      }
+function ball(X,Y,point){
+        var vectorX = X - 600
+        var vectorY = Y - 300
+       /* context.beginPath();
+          context.strokeStyle = 'white';
+          context.fillStyle = 'white';
+          context.lineWidth = 5;
+          context.moveTo(X,Y);
+          context.lineTo(X-ballXS*20, Y-ballYS*20);
+          context.stroke();
+          context.fill();
+          context.closePath();
+          */
+        var lent = Math.sqrt((vectorX * vectorX) + (vectorY * vectorY));
+        if (Math.abs(lent) < 55) {
+    var normx = ballXS / speed
+    var normy = ballYS / speed
+            if(lent==0){
+                lent=1
+            }
+    var dd = (normx * vectorX / lent+ normy * vectorY / lent) * 2
+    var refX = -(vectorX / lent * dd - normx)
+    var refY = -(vectorY / lent * dd - normy)
+    var lenr = Math.sqrt(refX * refX + refY * refY);
+    ballXS = (refX / lenr) * speed
+    ballYS = (refY / lenr) * speed
+
+    return "true"
+}
+
+      }
+      function ballNextFrame(XS, YS, hit) {
+          var tempspeed = Math.sqrt(XS * XS + YS * YS)
+
+          for (let i = 2; i <= tempspeed; i++) {
+              if (document.querySelector('#obstacle-select').value == "Rectangle") {
+                  if (rectanglesCollisions(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "side") {
+
+                      //alert("X: " + ballX + " until collision: " + i/tempspeed*XS + " until end: " + XS)
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      XS = -XS
+
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                  if (rectanglesCollisiont(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "top") {
+                      //alert("Y: " + ballY + " until collision: " + i/tempspeed*YS + " until end: " + YS)
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      YS = -YS
+
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+              }
+              cur = paddleCollision(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS)
+              if (cur != 0 && cur != prev) {
+                  prev = cur
+                  if (cur == 1) {
+                      ballX = centerX + 10
+                  } else {
+
+                      ballX = center2X - 10
+                  }
+                  ballY += i / tempspeed * YS
+                  XS = -XS
+                  hit = 1
+                  ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                  return
+              }
+              if (document.querySelector('#arena-select').value == "Rectangle") {
+                  if (wallCollisionV(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "vert") {
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      YS = -YS
+
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                  if (wallCollisionH(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "hor") {
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      XS = -XS
+
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+              }
+              if (document.querySelector('#arena-select').value == "Hexagon") {
+                  if (wallCollisionHH(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "hor") {
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      XS = -XS
+
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                  if (wallCollisionH1(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "1") {
+                      //alert("X: " + ballX + " until collision: " + i/tempspeed*XS + " until end: " + XS+"\n"+"Y: " + ballY + " until collision: " + i/tempspeed*YS + " until end: " + YS + " norm:" + (i/tempspeed*XS*i/tempspeed*XS+ i/tempspeed*YS* i/tempspeed*YS))
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                  if (wallCollisionH2(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "2") {
+                      //alert("X: " + ballX + " until collision: " + i/tempspeed*XS + " until end: " + XS+"\n"+"Y: " + ballY + " until collision: " + i/tempspeed*YS + " until end: " + YS + " norm:" + (i/tempspeed*XS*i/tempspeed*XS+ i/tempspeed*YS* i/tempspeed*YS))
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                  if (wallCollisionH3(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "3") {
+                      //alert("X: " + ballX + " until collision: " + i/tempspeed*XS + " until end: " + XS+"\n"+"Y: " + ballY + " until collision: " + i/tempspeed*YS + " until end: " + YS + " norm:" + (i/tempspeed*XS*i/tempspeed*XS+ i/tempspeed*YS* i/tempspeed*YS))
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                  if (wallCollisionH4(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "4") {
+                      //alert("X: " + ballX + " until collision: " + i/tempspeed*XS + " until end: " + XS+"\n"+"Y: " + ballY + " until collision: " + i/tempspeed*YS + " until end: " + YS + " norm:" + (i/tempspeed*XS*i/tempspeed*XS+ i/tempspeed*YS* i/tempspeed*YS))
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+              }
+              if (document.querySelector('#obstacle-select').value == "Ball") {
+                if(ball(ballX + i / tempspeed * XS,ballY + i / tempspeed * YS,t3)=="true"){
+                    ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                }
+              }
+
+              if (document.querySelector('#obstacle-select').value == "Triangle") {
+                if(corner(ballX + i / tempspeed * XS,ballY + i / tempspeed * YS,t3)=="true"){
+                    ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                }
+                if(corner(ballX + i / tempspeed * XS,ballY + i / tempspeed * YS,t2)=="true"){
+                    ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                }
+                if(corner(ballX + i / tempspeed * XS,ballY + i / tempspeed * YS,t1)=="true"){
+                    
+                    ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      //alert(ballX + " "+(ballX+XS))
+                      hit = 1
+                      
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                }
+                  if (triangleCollision(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "left") {
+                      //alert("X: " + ballX + " until collision: " + i/tempspeed*XS + " until end: " + XS+"\n"+"Y: " + ballY + " until collision: " + i/tempspeed*YS + " until end: " + YS + " norm:" + (i/tempspeed*XS*i/tempspeed*XS+ i/tempspeed*YS* i/tempspeed*YS))
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                  if (triangleCollisionR(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "right") {
+                      //alert("X: " + ballX + " until collision: " + i/tempspeed*XS + " until end: " + XS+"\n"+"Y: " + ballY + " until collision: " + i/tempspeed*YS + " until end: " + YS + " norm:" + (i/tempspeed*XS*i/tempspeed*XS+ i/tempspeed*YS* i/tempspeed*YS))
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      var dif = Math.round(Math.sqrt(ballXS * ballXS + ballYS * ballYS)) / tempspeed
+                      //alert(XS/YS)
+                      XS = ballXS / dif
+                      YS = ballYS / dif
+                      //alert(XS/YS)
+                      hit = 1
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                  if (triangleCollisionB(ballX + i / tempspeed * XS, ballY + i / tempspeed * YS) == "bottom") {
+
+                      ballX += i / tempspeed * XS
+                      ballY += i / tempspeed * YS
+                      YS = -YS
+
+                      hit = 1
+
+                      ballNextFrame(XS - i / tempspeed * XS, YS - i / tempspeed * YS, hit)
+                      return
+                  }
+                
+              }
+
+          }
+          if (hit == 0) {
+              ballX += ballXS
+              ballY += ballYS
+          } else {
+              ballX += XS
+              ballY += YS
+          }
+          drawBall();
+          prev = 0
+      }
+
+      function draw() {
+
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.fillStyle = 'black';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          drawArena()
+
+          //rectanglesCollision()
+          //document.querySelector('#obstacle-select').value = "Triangle"
+          if (document.querySelector('#obstacle-select').value == "Rectangle") {
+              drawRectangles();
+          } else if (document.querySelector('#obstacle-select').value == "Triangle") {
+              drawTriangle();
+          }
+          else if (document.querySelector('#obstacle-select').value == "Ball") {
+              drawBallOb();
+          }
+          drawPaddles();
+          ballNextFrame(ballXS, ballYS, 0);
+          speedAdjust();
+          detectGoal();
+          if (keyState[87]) {
+
+              if (paddleY >= 50 + 10 && document.querySelector('#arena-select').value == "Rectangle") {
+                  paddleY -= 10
+                  centerY -= 10
+              } else if (paddleY >= 150 + 10 && document.querySelector('#arena-select').value == "Hexagon") {
+                  paddleY -= 10
+                  centerY -= 10
+              }
+          }
+          if (keyState[83]) {
+              if (paddleY <= 550 - 100 - 10 && document.querySelector('#arena-select').value == "Rectangle") {
+                  paddleY += 10
+                  centerY += 10
+              } else if (paddleY <= 450 - 100 - 10 && document.querySelector('#arena-select').value == "Hexagon") {
+                  paddleY += 10
+                  centerY += 10
+              }
+          }
+          if (keyState[38]) {
+              if (paddle2Y >= 50 + 10 && document.querySelector('#arena-select').value == "Rectangle") {
+                  paddle2Y -= 10
+                  center2Y -= 10
+              } else if (paddle2Y >= 150 + 10 && document.querySelector('#arena-select').value == "Hexagon") {
+                  paddle2Y -= 10
+                  center2Y -= 10
+              }
+          }
+          if (keyState[40]) {
+              if (paddle2Y <= 550 - 100 - 10 && document.querySelector('#arena-select').value == "Rectangle") {
+                  paddle2Y += 10
+                  center2Y += 10
+              } else if (paddle2Y <= 450 - 100 - 10 && document.querySelector('#arena-select').value == "Hexagon") {
+                  paddle2Y += 10
+                  center2Y += 10
+              }
+          }
+          direction = 'none'
+
+      }
+
+      const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+
+      setInterval(draw, 10);
+    </script>
+  </head>
+  <body>
+    <h3 id="Score">Player1: 0 Player2: 0</h3>
+    <h1 id="Winner"></h1>
+    <select name="shapes" id="obstacle-select">
+      <option value="None">None</option>
+      <option value="Rectangle">Rectangle</option>
+      <option value="Triangle">Triangle</option>
+      <option value="Ball">Ball</option>
+    </select>
+    <select name="arena" id="arena-select">
+        <option value="Rectangle">Rectangle</option>
+        <option value="Hexagon">Hexagon</option>
+      </select>
+  </body>
+</html>
